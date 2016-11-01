@@ -50,8 +50,9 @@
 
 (schema/defn initialize :- RegistryContext
   [config :- MetricsConfig
-   domain :- (schema/maybe schema/Str)]
-  (let [jmx-config (get-in config [:reporters :jmx])
+   domain :- (schema/maybe (schema/if keyword? schema/Keyword schema/Str))]
+  (let [domain (if (keyword? domain) domain (keyword domain))
+        jmx-config (get-in config [:reporters :jmx])
         registry (MetricRegistry.)]
     (when (contains? config :enabled)
       (log/warn (format "%s  %s"
@@ -59,18 +60,19 @@
                         (trs "To suppress this warning remove metrics.enabled from your configuration."))))
     {:registry registry
      :jmx-reporter (when (:enabled jmx-config)
-                     (doto ^JmxReporter (jmx-reporter registry domain)
+                     (doto ^JmxReporter (jmx-reporter registry (and domain (name domain)))
                        (.start)))}))
 
 (schema/defn get-or-initialize! :- RegistryContext
   [config :- MetricsConfig
    {:keys [registries]} :- MetricsServiceContext
-   domain :- schema/Str]
-  (if-let [metric-reg (get-in @registries [domain])]
-    metric-reg
-    (let [reg-context (initialize config domain)]
-      (swap! registries assoc domain reg-context)
-      reg-context)))
+   domain :- (schema/if keyword? schema/Keyword schema/Str)]
+  (let [domain (if (keyword? domain) domain (keyword domain))]
+    (if-let [metric-reg (get-in @registries [domain])]
+      metric-reg
+      (let [reg-context (initialize config domain)]
+        (swap! registries assoc domain reg-context)
+        reg-context))))
 
 (schema/defn stop :- RegistryContext
   [context :- RegistryContext]

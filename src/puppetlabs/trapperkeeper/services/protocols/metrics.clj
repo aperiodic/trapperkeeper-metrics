@@ -5,7 +5,7 @@
   (get-metrics-registry
     [this]
     [this domain]
-    "Provides access to a MetricsRegistry where `domain` is the string used to
+    "Provides access to a MetricsRegistry where `domain` is a kewyord used to
      look up the registry. Specifing no `domain` will return the default
      MetricsRegistry. The `domain` is the name that will appear at the front of
      the JMX metric. For example in `foo:name=my-metric`, `foo` is the

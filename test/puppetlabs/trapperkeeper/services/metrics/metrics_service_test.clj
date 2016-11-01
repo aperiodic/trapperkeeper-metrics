@@ -76,23 +76,24 @@
 
 
       (testing "querying multiple metrics via POST should work"
-        (let [svc (app/get-service app :MetricsService)
-              registry (metrics-protocol/get-metrics-registry svc "pl.other.reg")]
-          (metrics/register registry
-                            (metrics/host-metric-name "localhost" "foo")
-                            (metrics/gauge 2))
-          (metrics/register registry
-                            (metrics/host-metric-name "localhost" "bar")
-                            (metrics/gauge 500))
+        (let [svc (app/get-service app :MetricsService)]
+          (doseq [domain ["pl.other.reg" :pl.other.reg]]
+            (let [registry (metrics-protocol/get-metrics-registry svc domain)]
+              (metrics/register registry
+                                (metrics/host-metric-name "localhost" "foo")
+                                (metrics/gauge 2))
+              (metrics/register registry
+                                (metrics/host-metric-name "localhost" "bar")
+                                (metrics/gauge 500))
 
-          (let [resp (http-client/post
-                      "http://localhost:8180/metrics/v1/mbeans"
-                      {:body (json/generate-string
-                              ["pl.other.reg:name=puppetlabs.localhost.foo"
-                               "pl.other.reg:name=puppetlabs.localhost.bar"])})
-                body (parse-response resp)]
-            (is (= 200 (:status resp)))
-            (is (= [{"Value" 2} {"Value" 500}] body)))
+              (let [resp (http-client/post
+                           "http://localhost:8180/metrics/v1/mbeans"
+                           {:body (json/generate-string
+                                    ["pl.other.reg:name=puppetlabs.localhost.foo"
+                                     "pl.other.reg:name=puppetlabs.localhost.bar"])})
+                    body (parse-response resp)]
+                (is (= 200 (:status resp)))
+                (is (= [{"Value" 2} {"Value" 500}] body)))))
 
           (let [resp (http-client/post
                       "http://localhost:8180/metrics/v1/mbeans"
